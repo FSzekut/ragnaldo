@@ -88,8 +88,10 @@ def loading_markup(stage: str) -> str:
 
 
 def render_source(document) -> None:
-    page = document.metadata.get("page")
-    page_label = f" · página {page + 1}" if isinstance(page, int) else ""
+    # location já chega formatado pela ingestão ("página 3", "slide 5",
+    # "planilha Vendas"); "documento" é o genérico e não acrescenta nada.
+    location = document.metadata.get("location")
+    label = f" · {location}" if location and location != "documento" else ""
     source = document.metadata.get("source", "fonte desconhecida")
-    with st.expander(f"{source}{page_label}"):
+    with st.expander(f"{source}{label}"):
         st.write(document.page_content)

@@ -8,6 +8,9 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 RAW_DATA_DIR = PROJECT_ROOT / "data" / "raw"
+# Conteúdo de terceiros já convertido para um formato textual (HTML e Notion,
+# por exemplo). Fica fora do Git e é reconstruído pelo pipeline de fontes.
+PROCESSED_DATA_DIR = PROJECT_ROOT / "data" / "processed"
 AUTHORIAL_SOURCES_DIR = PROJECT_ROOT / "docs" / "sources"
 VECTOR_STORE_DIR = PROJECT_ROOT / "artifacts" / "vector_store"
 
