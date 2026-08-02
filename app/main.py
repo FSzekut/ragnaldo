@@ -84,17 +84,22 @@ if question := st.chat_input("O que você quer descobrir?"):
 
     with st.chat_message("assistant"):
         with st.spinner("Consultando os vetores, porque reler tudo seria muito 2022..."):
-            documents = runtime.search(question)
-        if not documents:
-            answer = "Não encontrei evidência no corpus. O jurídico vetorial mandou não inventar."
-            st.markdown(answer)
-        else:
-            answer = (
-                "Encontrei estes trechos relevantes. A geração da resposta fundamentada "
-                "será conectada no próximo notebook do agente."
-            )
-            st.markdown(answer)
+            try:
+                answer, documents, record = runtime.answer(question)
+            except Exception as error:  # noqa: BLE001
+                # Falha do provedor não pode derrubar a sessão: a conversa
+                # anterior continua legível e o usuário pode tentar de novo.
+                answer, documents, record = f"O modelo não respondeu: {error}", [], None
+        st.markdown(answer)
+        if documents:
+            # "Consultados", não "usados": todos foram ao contexto, mas a resposta
+            # pode ter descartado os que não sustentavam nada. Chamá-los de fonte
+            # da resposta seria uma citação falsa dentro de um projeto que promete
+            # rastreabilidade.
+            st.caption(f"Trechos consultados ({len(documents)}):")
             for document in documents:
                 ui.render_source(document)
+        if record is not None:
+            st.caption(f"{record.latency_ms} ms")
 
     st.session_state.messages.append({"role": "assistant", "content": answer})

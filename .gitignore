@@ -25,6 +25,9 @@ data/processed/*
 !data/processed/.gitkeep
 artifacts/vector_store/*
 !artifacts/vector_store/.gitkeep
+# Registro de execução: contém as perguntas que os usuários realmente fizeram.
+# Amostras curadas vão para o README; o log bruto fica fora do Git.
+artifacts/logs/
 
 # Logs e temporários
 *.log

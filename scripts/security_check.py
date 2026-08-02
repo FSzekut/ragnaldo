@@ -13,11 +13,17 @@ FORBIDDEN_NAMES = {".env", "secrets.toml", "credentials.json", "service-account.
 FORBIDDEN_SUFFIXES = {".pem", ".key", ".p12", ".pfx"}
 SECRET_PATTERNS = {
     "OpenAI-like token": re.compile(r"\bsk-[A-Za-z0-9_-]{20,}\b"),
+    "Anthropic API key": re.compile(r"\bsk-ant-[A-Za-z0-9_-]{20,}\b"),
     "Google API key": re.compile(r"\bAIza[0-9A-Za-z_-]{30,}\b"),
     "AWS access key": re.compile(r"\bAKIA[0-9A-Z]{16}\b"),
     "private key": re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----"),
     "GitHub token": re.compile(r"\bgh[pousr]_[A-Za-z0-9]{30,}\b"),
 }
+
+# Não é segredo, mas identifica a máquina de quem executou. Chega quase sempre
+# por output de notebook: um aviso de biblioteca em stderr traz o caminho do
+# site-packages junto, e ninguém revisa output que não mudou o resultado.
+HOME_PATH_PATTERN = re.compile(r"(?:/home/|/Users/|[A-Za-z]:\\Users\\)[A-Za-z0-9_.-]+[/\\]")
 
 
 def git(*args: str) -> str:
@@ -54,6 +60,14 @@ def main() -> int:
         for label, pattern in SECRET_PATTERNS.items():
             if pattern.search(text):
                 failures.append(f"possível {label}: {relative}")
+
+        if found := HOME_PATH_PATTERN.search(text):
+            hint = (
+                " (rode scripts/normalize_notebooks.py)"
+                if path.suffix == ".ipynb"
+                else ""
+            )
+            failures.append(f"caminho absoluto de usuário em {relative}: {found.group()}{hint}")
 
     diff_check = subprocess.run(
         ["git", "diff", "--cached", "--check"],

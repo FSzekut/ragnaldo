@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from langchain_core.documents import Document
 
 from ragnaldo.config import SETTINGS
+from ragnaldo.generation import ExecutionRecord, answer_question
 from ragnaldo.ingestion import load_verified_index
 
 
@@ -17,6 +18,9 @@ class RagRuntime:
 
     def search(self, question: str) -> list[Document]:
         return self.vector_store.similarity_search(question, k=SETTINGS.retrieval_k)
+
+    def answer(self, question: str) -> tuple[str, list[Document], ExecutionRecord]:
+        return answer_question(question, self.vector_store)
 
 
 def load_runtime() -> RagRuntime:

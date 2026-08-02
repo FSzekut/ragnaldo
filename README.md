@@ -6,16 +6,25 @@ O RAGnaldo é o projeto desenvolvido para o Challenge Alura Agente. A aplicaçã
 
 ## Status
 
-🚧 Projeto em construção. A pesquisa das fontes, o pipeline inicial de ingestão e a landing page com lazy loading já estão estruturados. As decisões estão registradas em [`diretrizes.md`](diretrizes.md).
+🚧 Projeto em construção. Ingestão multiformato, índice vetorial verificado, recuperação com corte de evidência e geração fundamentada estão funcionando de ponta a ponta. Faltam o deploy e o registro da execução em nuvem. As decisões estão registradas em [`diretrizes.md`](diretrizes.md).
 
-## Arquitetura planejada
+## Arquitetura
 
 ```text
-Documentos -> ingestão offline -> embeddings locais -> índice persistido
-                                                        |
-Usuário -> Streamlit -> agente/retriever ----------------+
-                     -> resposta com fontes
+Ingestão (offline, sem custo de API)
+PDF DOCX XLSX PPTX MD TXT CSV JSON HTML
+    -> tabela LOADERS -> chunks -> embeddings locais -> FAISS + manifesto de hashes
+
+Serving
+pergunta -> embedding local -> busca vetorial -> corte de evidência
+                                                      |
+                                       nada sobrou? -> recusa (sem chamar a API)
+                                       sobrou?      -> contexto com procedência
+                                                      -> Claude -> resposta + fontes
+                                                      -> registro de execução
 ```
+
+Os embeddings são locais em todas as etapas, inclusive para a pergunta. A API do modelo gerador é chamada **uma vez por pergunta**, e apenas quando existe evidência que sustente uma resposta.
 
 ## Estrutura
 
@@ -43,6 +52,48 @@ python -m pip install -r requirements.txt
 python -m ipykernel install --sys-prefix --name ragnaldo --display-name "Python (RAGnaldo)"
 ```
 
+## Configuração do modelo gerador
+
+```bash
+cp .env.example .env
+```
+
+Preencha com o provedor, o modelo e a chave. O `.env` é ignorado pelo Git:
+
+```
+LLM_PROVIDER=anthropic
+LLM_MODEL=claude-sonnet-5
+LLM_API_KEY=sk-ant-...
+```
+
+Opcionais: `LLM_MAX_TOKENS` (padrão 1024), `RETRIEVAL_MAX_DISTANCE` (padrão 1.2) e `LLM_TEMPERATURE`, que só deve ser definida se o modelo escolhido aceitar o parâmetro — os mais recentes o rejeitam.
+
+## Exemplos
+
+### Pergunta dentro do corpus
+
+> **O que o ONE AI for Tech ensina sobre RAG e LangChain?**
+>
+> O ONE AI for Tech aborda esses temas na frente "Engenharia de IA e RAG com LangChain". Segundo o contexto, os pontos ensinados são LangChain e orquestração de LLMs, RAG para buscar informação em documentos reduzindo alucinações, e RAG avançado com chunking, embeddings, bancos vetoriais, reescrita de perguntas e avaliação de qualidade. (…)
+>
+> `(Fonte: one_ai_for_tech_oracle_snapshot.html)`
+
+Quatro trechos foram recuperados e passaram no corte, com distâncias entre 0,714 e 0,868. A resposta citou dois: os outros dois entraram no contexto mas não sustentavam nenhuma afirmação, e o modelo os descartou em vez de costurá-los ao texto. Latência de 6,9 s.
+
+### Pergunta fora do corpus
+
+> **Qual foi o placar da final da Copa do Mundo de 1970?**
+>
+> Não encontrei isso nas fontes que eu tenho. Poderia inventar, mas o jurídico vetorial não deixou.
+
+A busca devolveu quatro resultados, como sempre devolve — com distâncias de 1,450 a 1,543, todas acima do limiar. Nenhum virou contexto, e a recusa saiu em **19 ms sem chamar a API**.
+
+A separação entre os dois casos é limpa: 0,868 no pior trecho aceito contra 1,450 no melhor trecho rejeitado. O limiar de 1,2 fica centrado nesse vale. A calibração com um conjunto maior de perguntas é tarefa do notebook `04_avaliacao`.
+
+## Registro de execução
+
+Cada pergunta gera uma linha em `artifacts/logs/execution.jsonl` com timestamp, pergunta, resposta, trechos recuperados com suas distâncias, latência, modelo e eventual erro. O arquivo fica fora do Git porque contém as perguntas reais de quem usa o agente.
+
 ## Fontes
 
 Baixe as fontes públicas registradas no manifesto:
@@ -59,7 +110,7 @@ Arquivos de terceiros permanecem fora do Git. URLs, hashes e status temporal est
 jupyter lab
 ```
 
-Execute primeiro `01_ingestao_e_embeddings.ipynb` para gerar o índice. Depois use `02_retrieval_e_rag.ipynb` para inspecionar a recuperação e o prompt fundamentado.
+Execute primeiro `01_ingestao_e_embeddings.ipynb` para gerar o índice. Depois `02_retrieval_e_rag.ipynb`, que percorre a recuperação, o corte de evidência, o prompt e a cadeia completa — terminando no teste que mais importa: uma pergunta que o corpus não responde.
 
 ## Interface
 
@@ -68,6 +119,8 @@ streamlit run app/main.py
 ```
 
 A landing page é carregada sem importar torch, sentence-transformers, LangChain ou FAISS. Esses recursos entram em memória apenas quando o usuário inicializa o agente. Durante a primeira carga, a interface exibe uma animação com suporte a `prefers-reduced-motion`.
+
+Abaixo de cada resposta ficam os trechos consultados, com fonte e localização. Eles são rotulados como consultados, não como citados: todos foram ao contexto do modelo, mas a resposta pode ter descartado os que não sustentavam nenhuma afirmação.
 
 ## Segurança antes de commits
 
@@ -82,6 +135,6 @@ ruff check .
 git diff --cached
 ```
 
-O commit só deve ser criado depois que essas verificações passarem.
+O commit só deve ser criado depois que essas verificações passarem. O `security_check.py` também está instalado como hook de `pre-commit`, e o repositório tem push protection ativo no GitHub.
 
-As perguntas de exemplo, respostas geradas e evidências do deploy serão adicionadas após a escolha do modelo gerador e a validação do agente completo.
+A evidência do deploy será adicionada quando a aplicação estiver publicada.
