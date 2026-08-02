@@ -3,6 +3,8 @@ env/
 .venv/
 .env
 .streamlit/secrets.toml
+.cache/
+.huggingface/
 
 # Python e notebooks
 __pycache__/
@@ -27,4 +29,3 @@ artifacts/vector_store/*
 # Logs e temporários
 *.log
 tmp/
-

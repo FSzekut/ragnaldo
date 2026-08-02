@@ -1,0 +1,43 @@
+{
+  "snapshot_date": "2026-08-01",
+  "sources": [
+    {
+      "id": "oracle-ai-insights-2025",
+      "title": "A nova era da inteligência artificial: da inovação aos resultados reais",
+      "publisher": "Oracle",
+      "url": "https://www.oracle.com/br/a/ocom/docs/a-nova-era-da-ia.pdf",
+      "target": "data/raw/oracle_ai_insights_america_latina_2025.pdf",
+      "format": "pdf",
+      "status": "current",
+      "sha256": "3bb44d33d3f0354f44fe5843d502f16e2ba5cad6fc3a6e9bfe4558ec1a0e3505"
+    },
+    {
+      "id": "one-ai-for-tech-current-page",
+      "title": "ONE - Oracle Next Education",
+      "publisher": "Oracle",
+      "url": "https://www.oracle.com/br/education/oracle-next-education/",
+      "target": "data/raw/one_ai_for_tech_oracle_snapshot.html",
+      "format": "html",
+      "status": "mutable-web-snapshot",
+      "sha256": "1133e25062df5ab06542cf292b929ed500ff55c85306339c0531e80e65228be3"
+    },
+    {
+      "id": "one-manual-historical",
+      "title": "Manual do candidato Oracle Next Education",
+      "publisher": "Oracle e Alura",
+      "url": "https://www.oracle.com/br/a/ocom/docs/pt-ebook-manual-do-aluno-oracle-next.pdf",
+      "target": "data/raw/manual_one_historico.pdf",
+      "format": "pdf",
+      "status": "historical-do-not-use-for-current-rules",
+      "sha256": "394515dcca0e36215ffbec12111fbec5de5bff51afdd4ed51037fda656ecefa0"
+    }
+  ],
+  "unavailable_sources": [
+    {
+      "title": "Manual atual dos candidatos ONE",
+      "url": "https://grupoalura.notion.site/imersao-agentes-ia-one",
+      "checked_at": "2026-08-01",
+      "result": "404 durante a pesquisa; tentar manualmente caso o acesso seja restaurado"
+    }
+  ]
+}

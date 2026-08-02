@@ -1,0 +1,95 @@
+"""Componentes visuais leves do RAGnaldo."""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+import streamlit as st
+
+ASSETS_DIR = Path(__file__).parent / "assets"
+
+
+def configure_page() -> None:
+    st.set_page_config(
+        page_title="RAGnaldo",
+        page_icon="🧭",
+        layout="centered",
+        initial_sidebar_state="collapsed",
+    )
+    st.markdown(
+        '<link rel="preconnect" href="https://fonts.googleapis.com">'
+        '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
+        '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?'
+        'family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@500;600;700&display=swap">',
+        unsafe_allow_html=True,
+    )
+    css = (ASSETS_DIR / "style.css").read_text(encoding="utf-8")
+    st.markdown(f"<style>{css}</style>", unsafe_allow_html=True)
+
+
+def render_brand(compact: bool = False) -> None:
+    compact_class = " brand-compact" if compact else ""
+    st.markdown(
+        f"""
+        <section class="brand{compact_class}">
+          <div class="brand-mark" aria-hidden="true">
+            <span class="brand-node node-a"></span>
+            <span class="brand-node node-b"></span>
+            <span class="brand-node node-c"></span>
+            <span class="brand-core">R</span>
+          </div>
+          <div>
+            <p class="eyebrow">// guia não-oficial do Tech Builder</p>
+            <h1>RAGNALDO</h1>
+          </div>
+        </section>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def render_landing() -> bool:
+    render_brand()
+    st.markdown(
+        """
+        <p class="hero-copy">
+          Pergunte sobre ONE AI for Tech, agentes, RAG e a engenharia deste projeto.
+          As respostas usam documentos rastreáveis. Quando a fonte não sabe,
+          o RAGnaldo também não finge que sabe.
+        </p>
+        <div class="feature-grid">
+          <div><span>01</span><strong>fontes visíveis</strong></div>
+          <div><span>02</span><strong>embeddings locais</strong></div>
+          <div><span>03</span><strong>humor controlado</strong></div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    return st.button(
+        "Inicializar o RAGnaldo",
+        type="primary",
+        use_container_width=True,
+        key="initialize_ragnaldo",
+    )
+
+
+def loading_markup(stage: str) -> str:
+    return f"""
+    <div class="loading-shell" role="status" aria-live="polite">
+      <div class="vector-loader" aria-hidden="true">
+        <span class="orbit orbit-a"><i></i></span>
+        <span class="orbit orbit-b"><i></i></span>
+        <span class="loader-core">R</span>
+      </div>
+      <p class="loading-label">{stage}</p>
+      <p class="loading-joke">Modelo acordando. Até a inteligência artificial precisa de alguns segundos.</p>
+    </div>
+    """
+
+
+def render_source(document) -> None:
+    page = document.metadata.get("page")
+    page_label = f" · página {page + 1}" if isinstance(page, int) else ""
+    source = document.metadata.get("source", "fonte desconhecida")
+    with st.expander(f"{source}{page_label}"):
+        st.write(document.page_content)

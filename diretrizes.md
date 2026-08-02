@@ -138,6 +138,19 @@ O RAGnaldo não será uma simples cópia. A implementação deverá demonstrar e
 9. O README final deve incluir arquitetura, execução, exemplos reais e evidência do deploy.
 10. Humor na apresentação; rigor na recuperação.
 
+## Regra de segurança antes de commits
+
+Nenhum commit deverá ser criado sem uma verificação imediatamente anterior do conteúdo que será versionado. A checagem mínima inclui:
+
+1. revisar `git diff --cached` e a lista completa de arquivos staged;
+2. procurar tokens, chaves, senhas, credenciais e dados pessoais;
+3. confirmar que `.env`, caches, modelos, documentos privados e artefatos pesados continuam ignorados;
+4. executar `pip check`, testes e análise estática disponíveis;
+5. revisar dependências e arquivos baixados de terceiros;
+6. só então criar o commit, registrando no relatório da sessão o resultado da verificação.
+
+Em caso de dúvida, o commit deve ser adiado.
+
 ## Humor e mensagens provisórias
 
 - "Consultando os vetores — porque reler 29 páginas seria muito 2022."
@@ -147,4 +160,3 @@ O RAGnaldo não será uma simples cópia. A implementação deverá demonstrar e
 - "RAGnaldo encontrou evidências. Milagre não; similaridade de cosseno."
 
 Essas mensagens são provisórias e deverão ser usadas com moderação.
-
