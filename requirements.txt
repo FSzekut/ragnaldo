@@ -1,0 +1,19 @@
+# Antes deste arquivo, instale o PyTorch CPU-only:
+# python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+# Isso evita incluir vários gigabytes de bibliotecas CUDA no ambiente e no container.
+jupyterlab>=4.2,<5
+ipykernel>=6.29,<7
+langchain>=0.3,<1
+langchain-community>=0.3,<1
+langchain-huggingface>=0.1,<1
+langchain-text-splitters>=0.3,<1
+langgraph>=0.2,<1
+sentence-transformers>=3,<4
+faiss-cpu>=1.8,<2
+pypdf>=5,<6
+streamlit>=1.40,<2
+python-dotenv>=1.0,<2
+numpy>=1.26,<3
+pandas>=2.2,<3
+pytest>=8,<9
+ruff>=0.8,<1

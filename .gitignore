@@ -1,0 +1,30 @@
+# Ambiente e segredos
+env/
+.venv/
+.env
+.streamlit/secrets.toml
+
+# Python e notebooks
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# IDE e sistema
+.vscode/
+.idea/
+.DS_Store
+
+# Dados e artefatos gerados
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+artifacts/vector_store/*
+!artifacts/vector_store/.gitkeep
+
+# Logs e temporários
+*.log
+tmp/
+
