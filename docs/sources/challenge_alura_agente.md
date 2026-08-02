@@ -1,44 +1,64 @@
-# Challenge Alura Agente — requisitos recebidos
+# Challenge Alura Agente — enunciado oficial
+
+Fonte: board público do Trello do Challenge AluraAgente — ONE IA FOR TECH (pt-BR),
+consultado em 2 de agosto de 2026. Em caso de divergência, o enunciado exibido
+dentro da plataforma Alura é a referência final.
 
 ## Objetivo
 
-Construir um agente de inteligência artificial capaz de responder perguntas com base no conteúdo de um documento em PDF ou CSV.
+Desenvolver um agente de inteligência artificial corporativo, acessível a todos os
+colaboradores, capaz de responder perguntas com base em documentos internos de uma
+empresa. O agente deve compreender e processar múltiplos formatos de arquivo e
+cobrir diferentes domínios organizacionais, funcionando como uma base de
+conhecimento conversacional, centralizada e sempre disponível.
 
-## Entregáveis obrigatórios
+Formatos citados no enunciado: **PDF, Word, Excel, PowerPoint, Markdown, CSV, JSON
+e HTML**.
 
-### Repositório no GitHub
+## Requisitos obrigatórios
 
-- repositório público com o código-fonte;
-- histórico de commits que reflita o desenvolvimento;
-- estrutura organizada e fácil de compreender.
+O enunciado lista exatamente três:
 
-### Documentação no README
+1. Colocar o projeto num repositório público no GitHub.
+2. Realizar o deploy do agente na nuvem Oracle (OCI). **Deve-se utilizar ao menos
+   um serviço OCI no challenge.**
+3. Inserir no README uma imagem ou vídeo do agente sendo executado em nuvem.
 
-O README deve conter:
+O card 7 reforça o requisito 2: "nenhuma tecnologia ou serviço mencionado é
+obrigatório de usar. Porém, é obrigatório usar ao menos 1 serviço do ecossistema
+OCI neste processo de deploy".
 
-- descrição geral do projeto;
-- arquitetura da solução;
-- tecnologias e ferramentas utilizadas;
-- instruções para executar;
-- exemplos de perguntas;
-- exemplos de respostas geradas.
+Entre os serviços OCI sugeridos no card 7 estão OCIR, Compute, Container
+Instances, OKE, **Object Storage para os arquivos originais**, Autonomous Database,
+Vault para segredos e OCI DevOps para CI/CD.
 
-### Agente funcional
+## Registro de execução
 
-- responder perguntas baseadas no documento selecionado;
-- possuir código para ler e processar a fonte de informação.
+O card 8 pede que a execução seja documentada: pergunta recebida, contexto
+recuperado, resposta gerada, timestamp e latência. É necessário executar em nuvem
+e adicionar mídia (foto ou vídeo) como registro dessa execução no README.
 
-### Evidência do deploy
+## Liberdade de escopo
 
-A aplicação deve estar implantada e funcionando na nuvem. A evidência pode ser:
+O card "Ponto de atenção" é explícito: "Todos os passos aqui são apenas sugestões
+da estrutura do projeto. Em outras palavras, você pode fazer o seu projeto como
+desejar, desde que realize as funcionalidades mencionadas". A lista de temas
+sugeridos (e-commerce, SaaS, logística, saúde, educação, fintech) também é
+apresentada como referência, não como obrigação.
 
-- link público da aplicação;
-- captura de tela da aplicação em funcionamento.
+É essa cláusula que sustenta a escolha de tema do RAGnaldo, descrita em
+`dossie_ragnaldo.md`: em vez de uma empresa fictícia, o corpus trata do programa
+ONE AI for Tech e da engenharia do próprio agente.
 
-## Decisão específica do RAGnaldo
+## Estrutura sugerida (cards de backlog)
 
-Foi confirmado que o uso de outra nuvem é permitido. O RAGnaldo será implantado no Google Cloud Run, aproveitando créditos disponíveis na GCP.
+Os oito cards de backlog descrevem um pipeline de referência: coleta e organização
+de documentos, processamento e extração de conteúdo, indexação vetorial, camada de
+recuperação, geração e validação de respostas, implantação e interface, deploy na
+OCI e registro de execução. São sugestões, não requisitos.
 
-## Origem deste registro
+## Correção de registro
 
-Este documento organiza o enunciado fornecido pelo participante durante o planejamento do projeto. Em caso de divergência, o enunciado exibido dentro da plataforma Alura é a referência final.
+Uma versão anterior deste documento afirmava que "foi confirmado que o uso de outra
+nuvem é permitido". Isso estava errado: o enunciado oficial exige ao menos um
+serviço OCI. O registro foi corrigido após a leitura do board.

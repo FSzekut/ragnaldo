@@ -1,5 +1,5 @@
 {
-  "snapshot_date": "2026-08-01",
+  "snapshot_date": "2026-08-02",
   "sources": [
     {
       "id": "oracle-ai-insights-2025",
@@ -32,12 +32,32 @@
       "sha256": "394515dcca0e36215ffbec12111fbec5de5bff51afdd4ed51037fda656ecefa0"
     }
   ],
-  "unavailable_sources": [
+  "derived_sources": [
     {
-      "title": "Manual atual dos candidatos ONE",
+      "id": "challenge-trello-board",
+      "title": "Challenge AluraAgente — ONE IA FOR TECH (board oficial)",
+      "publisher": "Alura",
+      "url": "https://trello.com/b/IhB0NmMm/challenge-aluraagente-one-ia-for-tech-pt-br",
+      "target": "data/processed/challenge_trello.md",
+      "format": "md",
+      "status": "current",
+      "fetch": "api-json",
+      "fetch_note": "Board público exportado por https://trello.com/b/IhB0NmMm.json e convertido em Markdown. Não é um GET simples do HTML, por isso fica fora de download_sources.py.",
+      "retrieved_at": "2026-08-01",
+      "sha256": "1a1d41493b7a1cac38b823a10f2bd4c0bea28d1dbafd9dfabd2da96daee791bb"
+    },
+    {
+      "id": "one-imersao-notion",
+      "title": "Imersão Agentes de IA — ONE (guia da imersão de junho)",
+      "publisher": "Alura",
       "url": "https://grupoalura.notion.site/imersao-agentes-ia-one",
-      "checked_at": "2026-08-01",
-      "result": "404 durante a pesquisa; tentar manualmente caso o acesso seja restaurado"
+      "target": "data/processed/guia_imersao_one.md",
+      "format": "md",
+      "status": "historical-do-not-use-for-current-rules",
+      "fetch": "api-json",
+      "fetch_note": "Página Notion servida como SPA: um cliente sem JavaScript recebe HTML vazio. Conteúdo obtido pela API pública /api/v3/loadPageChunk, varrendo a árvore de blocos, e convertido em Markdown.",
+      "retrieved_at": "2026-08-01",
+      "sha256": "0d57d7aa9c7cc99d254d7824f93825c5a910e304923ae15d749af7827f7705ce"
     }
   ]
 }

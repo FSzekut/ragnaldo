@@ -16,12 +16,22 @@ Construir um agente funcional que responda a perguntas baseadas em documentos, c
 - histórico de commits coerente;
 - estrutura organizada;
 - README completo;
-- leitura e processamento de PDF ou CSV;
+- leitura e processamento de PDF, Word, Excel, PowerPoint, Markdown, CSV, JSON e HTML;
 - agente inteligente funcional;
-- deploy público na nuvem;
-- link e captura de tela como evidência.
+- deploy na nuvem usando ao menos um serviço OCI;
+- registro da execução em nuvem, com mídia no README.
 
-Embora o enunciado original mencione OCI, foi confirmado que o deploy na GCP é permitido. O projeto será publicado no Google Cloud Run aproveitando os créditos disponíveis.
+O enunciado oficial, extraído do board público do Trello em 2 de agosto de 2026, é
+inequívoco: "é obrigatório usar ao menos 1 serviço do ecossistema OCI neste processo
+de deploy". Uma anotação anterior deste projeto afirmava que outra nuvem era
+permitida — estava errada e foi corrigida.
+
+A arquitetura adotada é híbrida: a aplicação roda no Cloud Run, aproveitando os
+créditos GCP disponíveis, e os documentos-fonte ficam no **OCI Object Storage**. O
+card 7 do enunciado lista exatamente esse serviço entre os sugeridos ("os arquivos
+originais ficam no OCI Object Storage"), o que satisfaz o requisito. A tensão com a
+leitura mais estrita do requisito 2 — que fala em "deploy do agente na nuvem
+Oracle" — é conhecida e foi assumida deliberadamente.
 
 ## Problema e público
 

@@ -59,7 +59,7 @@ As fases apresentadas são:
 
 ## Relação com o RAGnaldo
 
-O projeto aplica diretamente os temas da formação: documentos em PDF, chunking, embeddings locais, índice vetorial, LangChain, LangGraph, Streamlit, testes e deploy em cloud. A escolha da GCP é permitida no Challenge e não altera o objetivo pedagógico de publicar e operar a solução.
+O projeto aplica diretamente os temas da formação: documentos em múltiplos formatos, chunking, embeddings locais, índice vetorial, LangChain, LangGraph, Streamlit, testes e deploy em cloud. O Challenge exige ao menos um serviço OCI no deploy; o RAGnaldo atende ao requisito mantendo os documentos-fonte no OCI Object Storage, conforme registrado em `challenge_alura_agente.md`.
 
 ## Limites
 
