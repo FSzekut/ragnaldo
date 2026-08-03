@@ -69,6 +69,16 @@ jobs:
         continue-on-error: true
         run: python -m pip_audit
 
+      - name: Cache do modelo de embeddings
+        # Sem isto, cada execução rebaixa os mesmos ~120 MB do HuggingFace. Os
+        # runners saem por IPs compartilhados e as requisições anônimas batem no
+        # rate limit (HTTP 429), derrubando o deploy por um motivo que não tem
+        # nada a ver com o código. O modelo é imutável: cabe em cache indefinido.
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-paraphrase-multilingual-MiniLM-L12-v2
+
       - name: Baixar documentos-fonte do OCI Object Storage
         env:
           OCI_CLI_USER: ${{ secrets.OCI_CLI_USER }}
@@ -80,6 +90,10 @@ jobs:
         run: python scripts/sync_oci.py download
 
       - name: Gerar índice vetorial
+        env:
+          # Opcional: requisições autenticadas ao Hub têm limite muito maior.
+          # Vazio quando o segredo não existe, e aí vale o comportamento anônimo.
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: python scripts/build_index.py
 
       - name: Avaliar recuperação
@@ -99,11 +113,15 @@ jobs:
         run: gcloud auth configure-docker ${{ env.GCP_REGION }}-docker.pkg.dev --quiet
 
       - name: Construir e enviar a imagem
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           IMAGE="${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT}/${REPOSITORY}/${SERVICE}"
           # Duas tags: o SHA identifica exatamente o que está no ar e permite
           # voltar atrás; latest é conveniência para quem inspeciona à mão.
-          docker build -t "${IMAGE}:${GITHUB_SHA}" -t "${IMAGE}:latest" .
+          docker build \
+            --secret id=hf_token,env=HF_TOKEN \
+            -t "${IMAGE}:${GITHUB_SHA}" -t "${IMAGE}:latest" .
           docker push "${IMAGE}:${GITHUB_SHA}"
           docker push "${IMAGE}:latest"
 

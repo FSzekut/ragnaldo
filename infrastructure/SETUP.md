@@ -149,6 +149,23 @@ Conferir sem revelar valores:
 gh secret list
 ```
 
+### HF_TOKEN (opcional, mas recomendado)
+
+O pipeline baixa o modelo de embeddings duas vezes: uma para gerar o índice e
+outra dentro do build da imagem. Os runners do GitHub saem por IPs
+compartilhados, e requisições anônimas ao HuggingFace batem no rate limit —
+`HTTP 429` derruba o deploy por um motivo que nada tem a ver com o código.
+
+O cache do runner resolve a partir da segunda execução. O token cobre a
+primeira e qualquer invalidação de cache:
+
+1. crie um token de leitura em <https://huggingface.co/settings/tokens>
+   (conta e token são gratuitos);
+2. `gh secret set HF_TOKEN`
+
+Se o segredo não existir, tudo continua funcionando de forma anônima — só fica
+sujeito ao limite.
+
 ## 7. Primeiro deploy
 
 ```bash

@@ -35,7 +35,14 @@ RUN pip install --no-cache-dir -r requirements.txt
 # O modelo é baixado no build, não no primeiro acesso. Sem isso, a primeira
 # pessoa a abrir o app depois de cada instância nova esperaria o download de
 # ~120 MB — e uma falha de rede no Cloud Run viraria erro na cara do usuário.
-RUN python -c "from sentence_transformers import SentenceTransformer; \
+#
+# O token do HuggingFace entra como secret do BuildKit: ele existe durante o
+# comando e não fica em camada nem no histórico da imagem. É opcional
+# (required=false), então o build local funciona sem configurar nada — quem
+# precisa dele é o CI, onde requisições anônimas batem no rate limit do Hub.
+RUN --mount=type=secret,id=hf_token,required=false \
+    HF_TOKEN="$(cat /run/secrets/hf_token 2>/dev/null || true)" \
+    python -c "from sentence_transformers import SentenceTransformer; \
     SentenceTransformer('sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2')"
 
 # Depois do modelo já estar na imagem, qualquer consulta ao Hub é round-trip
