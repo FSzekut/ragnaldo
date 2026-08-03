@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sys
+import traceback
 from pathlib import Path
 
 import streamlit as st
@@ -104,6 +105,10 @@ if question:
             except Exception as error:  # noqa: BLE001
                 # Falha do provedor não pode derrubar a sessão: a conversa
                 # anterior continua legível e o usuário pode tentar de novo.
+                # O traceback vai para stderr porque a mensagem na tela é curta
+                # demais para diagnosticar — em produção, ela era tudo o que
+                # existia, e os logs do Cloud Run não registravam nada.
+                traceback.print_exc(file=sys.stderr)
                 answer, documents, record = f"O modelo não respondeu: {error}", [], None
         st.markdown(answer)
         if documents:

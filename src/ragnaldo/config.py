@@ -76,8 +76,13 @@ class GenerationSettings:
     # repr=False não é preciosismo: RagSettings é impresso no notebook 01, cujos
     # outputs são versionados. Uma chave dentro do repr acabaria num repositório
     # público sem que ninguém tivesse escrito a chave em lugar nenhum.
+    # O strip() é defesa em profundidade. A chave viaja por .env, Secret Manager
+    # e variável de ambiente, e qualquer um desses caminhos pode agregar um "\n"
+    # invisível — um pipe de shell basta. A quebra de linha vai parar no header
+    # x-api-key, que não a aceita, e a requisição morre antes de sair com um
+    # erro de conexão que não menciona a causa em lugar nenhum.
     api_key: str = field(
-        default_factory=lambda: os.getenv("LLM_API_KEY", ""),
+        default_factory=lambda: os.getenv("LLM_API_KEY", "").strip(),
         repr=False,
         compare=False,
     )

@@ -40,16 +40,29 @@ Cloud Run a lê do Secret Manager em tempo de execução.
 
 ```bash
 # Lê do .env local sem exibir a chave no terminal nem no histórico do shell.
-grep '^LLM_API_KEY=' .env | cut -d= -f2- \
+# O "tr -d '\n'" não é opcional: grep e cut preservam a quebra de linha, ela
+# entra no segredo e depois vai para o header x-api-key. Header HTTP não aceita
+# newline, então o cliente aborta a requisição e devolve APIConnectionError —
+# que parece problema de rede e não tem nada a ver com rede.
+grep '^LLM_API_KEY=' .env | cut -d= -f2- | tr -d '\n' \
   | gcloud secrets create ragnaldo-llm-api-key --data-file=-
 ```
 
 Para rotacionar depois:
 
 ```bash
-grep '^LLM_API_KEY=' .env | cut -d= -f2- \
+grep '^LLM_API_KEY=' .env | cut -d= -f2- | tr -d '\n' \
   | gcloud secrets versions add ragnaldo-llm-api-key --data-file=-
 ```
+
+Conferir se o segredo tem exatamente o tamanho esperado, sem exibir o valor:
+
+```bash
+gcloud secrets versions access latest --secret=ragnaldo-llm-api-key | wc -c
+grep '^LLM_API_KEY=' .env | cut -d= -f2- | tr -d '\n' | wc -c
+```
+
+Os dois números precisam ser idênticos.
 
 A conta de serviço que executa o Cloud Run precisa conseguir ler o segredo:
 
