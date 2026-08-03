@@ -117,6 +117,7 @@ jobs:
             --allow-unauthenticated \
             --memory 2Gi \
             --cpu 2 \
+            --cpu-boost \
             --timeout 300 \
             --concurrency 8 \
             --max-instances 3 \

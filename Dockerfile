@@ -38,6 +38,13 @@ RUN pip install --no-cache-dir -r requirements.txt
 RUN python -c "from sentence_transformers import SentenceTransformer; \
     SentenceTransformer('sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2')"
 
+# Depois do modelo já estar na imagem, qualquer consulta ao Hub é round-trip
+# inútil no caminho crítico do cold start — e transforma indisponibilidade da
+# rede em falha de inicialização. Só pode vir depois do RUN acima, que precisa
+# justamente baixar o modelo.
+ENV HF_HUB_OFFLINE=1 \
+    TRANSFORMERS_OFFLINE=1
+
 COPY src/ ./src/
 COPY app/ ./app/
 # Gerado por scripts/build_index.py antes do build. Ver .dockerignore.
