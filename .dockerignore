@@ -1,0 +1,31 @@
+# Tudo que não for necessário ao serving fica fora: cada arquivo copiado vira
+# camada, e o tempo de cold start do Cloud Run depende do tamanho da imagem.
+
+.git/
+.github/
+env/
+.venv/
+.env
+.pytest_cache/
+.ruff_cache/
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
+# Documentos-fonte: já viraram vetores. A aplicação lê o índice, não os PDFs.
+data/
+
+# Notebooks e material de estudo não vão para produção.
+notebooks/
+docs/
+assets/
+infrastructure/
+tests/
+scripts/
+
+# Logs de execução são gerados em runtime, e os locais são da máquina de quem
+# desenvolveu.
+artifacts/logs/
+
+*.md
+!README.md

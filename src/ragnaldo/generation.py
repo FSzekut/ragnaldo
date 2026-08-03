@@ -95,13 +95,38 @@ def select_evidence(
     results: list[tuple[Document, float]],
     settings: GenerationSettings = GENERATION,
 ) -> list[tuple[Document, float]]:
-    """Descarta o que está longe demais para sustentar uma resposta.
+    """Decide se há evidência e, havendo, quanto dela vale enviar ao modelo.
 
-    A busca por similaridade sempre devolve k resultados, mesmo para uma pergunta
-    sobre um assunto que não existe no corpus: ela retorna os menos ruins. Sem
-    esse corte, o modelo recebe trechos irrelevantes e é convidado a improvisar.
+    A busca sempre devolve k resultados, mesmo para uma pergunta sobre algo que
+    não existe no corpus: ela retorna os menos ruins, não os bons. O corte é o
+    que impede esses trechos de chegarem ao modelo como contexto legítimo.
+
+    São dois estágios, porque a distância não é comparável entre perguntas —
+    a mesma dúvida rende 0.7 escrita no vocabulário do corpus e 1.15 escrita
+    de forma coloquial:
+
+    1. o melhor resultado responde "o corpus sabe algo sobre isso?";
+    2. a margem relativa responde "quais dos demais acompanham o melhor?",
+       adaptando-se à escala daquela pergunta específica.
     """
-    return [(document, score) for document, score in results if score <= settings.max_distance]
+    if not results:
+        return []
+
+    best = min(score for _, score in results)
+    if best > settings.best_max:
+        return []
+
+    limit = best + settings.relative_margin
+    ordered = sorted(results, key=lambda item: item[1])
+    selected = [item for item in ordered if item[1] <= limit]
+
+    # Um trecho isolado costuma ser meia seção, porque o divisor corta por
+    # tamanho e não por assunto. O piso recupera a vizinhança que a margem
+    # descartou por pouco — e o modelo continua livre para ignorá-la.
+    if len(selected) < settings.min_evidence:
+        selected = ordered[: settings.min_evidence]
+
+    return selected
 
 
 def build_model(settings: GenerationSettings = GENERATION):

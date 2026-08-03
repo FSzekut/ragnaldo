@@ -30,7 +30,10 @@ class RagSettings:
     )
     chunk_size: int = int(os.getenv("CHUNK_SIZE", "1000"))
     chunk_overlap: int = int(os.getenv("CHUNK_OVERLAP", "150"))
-    retrieval_k: int = int(os.getenv("RETRIEVAL_K", "4"))
+    # 4 era pouco: em perguntas curtas e coloquiais, o trecho que responde de
+    # fato apareceu em oitavo lugar. Recuperar mais e cortar depois custa alguns
+    # milissegundos de busca local; recuperar de menos custa a resposta.
+    retrieval_k: int = int(os.getenv("RETRIEVAL_K", "10"))
     device: str = os.getenv("EMBEDDING_DEVICE", "cpu")
 
 
@@ -47,11 +50,28 @@ class GenerationSettings:
     )
 
     # O FAISS com vetores normalizados devolve distância L2 ao quadrado: 0 é
-    # idêntico, 2 é ortogonal, e distância = 2 - 2 * similaridade de cosseno.
-    # 1.2 equivale a cosseno 0.4 e barra apenas o que está claramente fora do
-    # assunto. É um chute honesto: a calibração real depende dos dados e é
-    # tarefa do notebook 04, que tem a distância de cada consulta registrada.
-    max_distance: float = float(os.getenv("RETRIEVAL_MAX_DISTANCE", "1.2"))
+    # idêntico, 2 é ortogonal, distância = 2 - 2 * similaridade de cosseno.
+    #
+    # O corte tem dois estágios porque a distância não é comparável entre
+    # perguntas: uma pergunta longa no vocabulário do corpus produz 0.7, e uma
+    # curta e coloquial sobre o mesmo assunto produz 1.15. Um limiar absoluto
+    # único rejeitaria a segunda ou aceitaria qualquer coisa na primeira.
+    #
+    # 1) O MELHOR resultado precisa estar abaixo de best_max. É ele que
+    #    distingue "o corpus tem algo sobre isso" de "não tem": medido, uma
+    #    pergunta legítima teve melhor=1.156 e uma fora do corpus, 1.450.
+    # 2) Os demais entram se estiverem dentro de relative_margin do melhor,
+    #    o que se adapta à escala de cada pergunta em vez de fixá-la.
+    best_max: float = float(os.getenv("RETRIEVAL_BEST_MAX", "1.35"))
+    relative_margin: float = float(os.getenv("RETRIEVAL_RELATIVE_MARGIN", "0.25"))
+
+    # Piso de trechos, aplicado depois da margem. Quando um chunk é muito melhor
+    # que os demais, a margem descarta todo o resto e sobra ele sozinho — e como
+    # o texto foi partido a cada mil caracteres, esse trecho único costuma ser
+    # metade de uma seção. O modelo então responde que a informação "foi cortada
+    # antes de detalhar", o que é verdade e não deveria acontecer: a continuação
+    # estava no chunk seguinte, descartada por ser um pouco mais distante.
+    min_evidence: int = int(os.getenv("RETRIEVAL_MIN_EVIDENCE", "4"))
 
     # repr=False não é preciosismo: RagSettings é impresso no notebook 01, cujos
     # outputs são versionados. Uma chave dentro do repr acabaria num repositório

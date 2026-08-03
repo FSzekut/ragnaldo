@@ -87,11 +87,64 @@ def loading_markup(stage: str) -> str:
     """
 
 
-def render_source(document) -> None:
+# Quatro perguntas que a suíte de scripts/eval_retrieval.py cobre. Sugerir algo
+# que o corpus não responde bem seria convidar o visitante à única experiência
+# ruim disponível logo na primeira interação.
+SUGGESTED_QUESTIONS = [
+    "Quem é você?",
+    "Para quem é o programa ONE?",
+    "Quais os requisitos do Challenge?",
+    "Como você foi construído?",
+]
+
+
+def render_suggestions() -> str | None:
+    """Mostra perguntas prontas e devolve a escolhida, se houver.
+
+    Uma caixa de texto vazia é o pior primeiro contato com um agente de corpus
+    fechado: quem chega não sabe o que ele sabe, chuta algo fora do acervo e
+    recebe uma recusa — correta, e ainda assim a pior porta de entrada possível.
+    """
+    st.caption("Não sabe por onde começar?")
+    columns = st.columns(2)
+    for position, question in enumerate(SUGGESTED_QUESTIONS):
+        if columns[position % 2].button(
+            question, key=f"suggestion_{position}", use_container_width=True
+        ):
+            return question
+    return None
+
+
+def render_source(document, prefix: str = "") -> None:
     # location já chega formatado pela ingestão ("página 3", "slide 5",
     # "planilha Vendas"); "documento" é o genérico e não acrescenta nada.
     location = document.metadata.get("location")
     label = f" · {location}" if location and location != "documento" else ""
     source = document.metadata.get("source", "fonte desconhecida")
-    with st.expander(f"{source}{label}"):
+    with st.expander(f"{prefix}{source}{label}"):
         st.write(document.page_content)
+
+
+def render_evidence(documents, answer: str) -> None:
+    """Separa o que sustentou a resposta do que apenas foi consultado.
+
+    Dez trechos idênticos em aparência transferem ao leitor o trabalho de
+    descobrir quais importaram — e num projeto que promete rastreabilidade, é
+    justamente esse o trabalho que a interface deveria fazer. A separação usa a
+    citação que o modelo já escreveu no texto.
+    """
+    citados, consultados = [], []
+    for document in documents:
+        source = document.metadata.get("source", "")
+        (citados if source and source in answer else consultados).append(document)
+
+    if citados:
+        st.caption(f"Fontes citadas na resposta ({len(citados)}):")
+        for document in citados:
+            render_source(document, prefix="✓ ")
+
+    if consultados:
+        rotulo = "Também consultados, sem sustentar afirmações"
+        st.caption(f"{rotulo} ({len(consultados)}):")
+        for document in consultados:
+            render_source(document)

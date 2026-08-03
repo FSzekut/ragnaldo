@@ -78,7 +78,7 @@ Opcionais: `LLM_MAX_TOKENS` (padrão 1024), `RETRIEVAL_MAX_DISTANCE` (padrão 1.
 >
 > `(Fonte: one_ai_for_tech_oracle_snapshot.html)`
 
-Quatro trechos foram recuperados e passaram no corte, com distâncias entre 0,714 e 0,868. A resposta citou dois: os outros dois entraram no contexto mas não sustentavam nenhuma afirmação, e o modelo os descartou em vez de costurá-los ao texto. Latência de 6,9 s.
+A resposta citou duas fontes. Outros trechos entraram no contexto mas não sustentavam nenhuma afirmação, e o modelo os descartou em vez de costurá-los ao texto. Latência de 6,9 s.
 
 ### Pergunta fora do corpus
 
@@ -86,9 +86,31 @@ Quatro trechos foram recuperados e passaram no corte, com distâncias entre 0,71
 >
 > Não encontrei isso nas fontes que eu tenho. Poderia inventar, mas o jurídico vetorial não deixou.
 
-A busca devolveu quatro resultados, como sempre devolve — com distâncias de 1,450 a 1,543, todas acima do limiar. Nenhum virou contexto, e a recusa saiu em **19 ms sem chamar a API**.
+A busca devolveu dez resultados, como sempre devolve — o melhor a 1,450, longe demais para sustentar qualquer coisa. Nenhum virou contexto, e a recusa saiu em **19 ms sem chamar a API**.
 
-A separação entre os dois casos é limpa: 0,868 no pior trecho aceito contra 1,450 no melhor trecho rejeitado. O limiar de 1,2 fica centrado nesse vale. A calibração com um conjunto maior de perguntas é tarefa do notebook `04_avaliacao`.
+## Corte de evidência
+
+A busca sempre retorna `k` resultados: para uma pergunta sobre algo ausente do corpus, ela devolve os menos ruins, não os bons. O que decide se existe resposta é o corte, em dois estágios:
+
+1. **o melhor resultado precisa estar abaixo de `best_max` (1,35)** — é ele que separa "o corpus trata desse assunto" de "não trata";
+2. **os demais entram se ficarem dentro de `relative_margin` (0,25) do melhor** — o que se adapta à escala de cada pergunta;
+3. **pelo menos `min_evidence` (4) trechos são enviados** quando os dois primeiros estágios deixam menos.
+
+O terceiro estágio corrige um efeito colateral do segundo: quando um trecho é muito melhor que os demais, a margem descarta todo o resto e sobra ele sozinho — e como o texto é dividido a cada mil caracteres, esse trecho isolado costuma ser metade de uma seção. O modelo então responde, com razão, que a informação "foi cortada antes de detalhar", enquanto a continuação estava no chunk seguinte.
+
+O segundo estágio existe porque a distância não é comparável entre perguntas. "O que o ONE ensina sobre RAG e LangChain?" produz 0,71; "para quem é o programa ONE?", sobre o mesmo corpus, produz 1,16. Um limiar absoluto único rejeitaria a segunda ou aceitaria qualquer coisa na primeira — foi exatamente o que aconteceu na primeira calibração deste projeto, feita com uma única pergunta de exemplo.
+
+O corte decide se **há assunto**, não se há resposta. Perguntas com vocabulário sobreposto ao corpus passam de propósito, e quem recusa ali é o modelo, que recebe o contexto e vê que ele trata de outra coisa.
+
+## Avaliação
+
+```bash
+python scripts/eval_retrieval.py
+```
+
+Dezesseis perguntas com expectativa declarada: onze que o corpus responde — várias em linguagem coloquial, que é onde a recuperação falhava — e cinco que ele não responde. O script falha se a calibração regredir.
+
+Isso não é teste unitário e não pode ser: nos dois modos de falha de um RAG (silêncio indevido e resposta indevida) o código está correto. O que está errado é a calibração, e ela só aparece executando perguntas contra o índice real.
 
 ## Registro de execução
 

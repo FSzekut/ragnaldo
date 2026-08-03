@@ -77,7 +77,22 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-if question := st.chat_input("O que você quer descobrir?"):
+question = st.chat_input("O que você quer descobrir?") or st.session_state.pop(
+    "pending_question", None
+)
+
+# As sugestões só existem enquanto não há nada a responder. Sem o "not question",
+# o rerun disparado pelo clique redesenharia os botões antes de a resposta entrar
+# no histórico — eles ficariam na tela carregando o estado da rodada anterior.
+if (
+    not question
+    and len(st.session_state.messages) == 1
+    and (escolhida := ui.render_suggestions())
+):
+    st.session_state.pending_question = escolhida
+    st.rerun()
+
+if question:
     st.session_state.messages.append({"role": "user", "content": question})
     with st.chat_message("user"):
         st.markdown(question)
@@ -92,13 +107,10 @@ if question := st.chat_input("O que você quer descobrir?"):
                 answer, documents, record = f"O modelo não respondeu: {error}", [], None
         st.markdown(answer)
         if documents:
-            # "Consultados", não "usados": todos foram ao contexto, mas a resposta
-            # pode ter descartado os que não sustentavam nada. Chamá-los de fonte
-            # da resposta seria uma citação falsa dentro de um projeto que promete
-            # rastreabilidade.
-            st.caption(f"Trechos consultados ({len(documents)}):")
-            for document in documents:
-                ui.render_source(document)
+            # Todos foram ao contexto do modelo, mas só alguns sustentaram o que
+            # ele escreveu. Apresentar os dez como "fontes da resposta" seria uma
+            # citação falsa dentro de um projeto que promete rastreabilidade.
+            ui.render_evidence(documents, answer)
         if record is not None:
             st.caption(f"{record.latency_ms} ms")
 
