@@ -144,6 +144,25 @@ A landing page é carregada sem importar torch, sentence-transformers, LangChain
 
 Abaixo de cada resposta ficam os trechos consultados, com fonte e localização. Eles são rotulados como consultados, não como citados: todos foram ao contexto do modelo, mas a resposta pode ter descartado os que não sustentavam nenhuma afirmação.
 
+## Deploy
+
+Cada push na `main` dispara `.github/workflows/deploy.yml`, que executa:
+
+```text
+testes e lint
+    -> baixa os documentos do OCI Object Storage
+    -> gera o índice vetorial
+    -> avalia a recuperação   <- barra o deploy se a calibração regredir
+    -> constrói a imagem e envia ao Artifact Registry
+    -> publica no Cloud Run
+```
+
+O índice é construído no pipeline, não empacotado no repositório: os documentos-fonte são de terceiros e ficam fora do Git, e quem os guarda é o **OCI Object Storage**. É esse passo que atende ao requisito de usar ao menos um serviço OCI — e ele não é decorativo, porque sem o bucket o pipeline não teria as fontes para indexar.
+
+A autenticação no GCP usa **Workload Identity Federation**: o GitHub emite um token de curta duração a cada execução e o Google o troca por credenciais temporárias. Nenhuma chave de conta de serviço existe como segredo. A chave da API do modelo fica no Secret Manager e é lida pelo Cloud Run em tempo de execução, nunca entrando na imagem.
+
+A preparação da infraestrutura está em [`infrastructure/SETUP.md`](infrastructure/SETUP.md).
+
 ## Segurança antes de commits
 
 Depois de revisar e adicionar os arquivos desejados ao staging:
