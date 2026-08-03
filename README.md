@@ -1,12 +1,22 @@
 # RAGnaldo
 
-> Um guia inteligente e bem-humorado sobre o ONE AI for Tech, o Tech Builder e a própria engenharia por trás deste agente.
+> Um guia inteligente e bem-humorado sobre o ONE AI for Tech e a própria engenharia por trás deste agente.
 
-O RAGnaldo é o projeto desenvolvido para o Challenge Alura Agente. A aplicação usará RAG para responder a perguntas com base em documentos públicos e em documentação autoral do projeto, sempre apresentando as fontes recuperadas.
+### ▶ [Acesse a aplicação](https://ragnaldo-gh5wfcwbpa-rj.a.run.app)
+
+O RAGnaldo é o projeto desenvolvido para o Challenge Alura Agente. Ele usa RAG para responder perguntas com base em documentos públicos e em documentação autoral do projeto, sempre apresentando as fontes recuperadas — e recusando quando elas não sustentam a resposta.
+
+![Página inicial do RAGnaldo](assets/landing.png)
+
+A landing carrega sem importar torch, sentence-transformers, LangChain ou FAISS. Esses recursos só entram em memória quando o visitante inicializa o agente.
+
+![RAGnaldo respondendo com fontes rastreáveis](assets/agente-respondendo.png)
+
+Uma resposta em produção: o agente se apresenta, cita a fonte que sustenta cada afirmação, declara explicitamente o que o contexto não cobre — "sobre detalhes mais técnicos de arquitetura interna, o contexto que tenho não traz mais especificações, então paro por aqui" — e lista abaixo os trechos consultados que não sustentaram nada.
 
 ## Status
 
-🚧 Projeto em construção. Ingestão multiformato, índice vetorial verificado, recuperação com corte de evidência e geração fundamentada estão funcionando de ponta a ponta. Faltam o deploy e o registro da execução em nuvem. As decisões estão registradas em [`diretrizes.md`](diretrizes.md).
+✅ **Em produção.** Ingestão multiformato, índice vetorial verificado, recuperação com corte de evidência, geração fundamentada e deploy automático no Cloud Run funcionando de ponta a ponta. As decisões estão registradas em [`diretrizes.md`](diretrizes.md).
 
 ## Arquitetura
 
@@ -66,7 +76,7 @@ LLM_MODEL=claude-sonnet-5
 LLM_API_KEY=sk-ant-...
 ```
 
-Opcionais: `LLM_MAX_TOKENS` (padrão 1024), `RETRIEVAL_MAX_DISTANCE` (padrão 1.2) e `LLM_TEMPERATURE`, que só deve ser definida se o modelo escolhido aceitar o parâmetro — os mais recentes o rejeitam.
+Opcionais, todos com padrão razoável: `LLM_MAX_TOKENS` (1024), `RETRIEVAL_K` (10), `RETRIEVAL_BEST_MAX` (1.35), `RETRIEVAL_RELATIVE_MARGIN` (0.25) e `RETRIEVAL_MIN_EVIDENCE` (4). O `LLM_TEMPERATURE` só deve ser definido se o modelo escolhido aceitar o parâmetro — os mais recentes o rejeitam com HTTP 400.
 
 ## Exemplos
 
@@ -90,7 +100,7 @@ A busca devolveu dez resultados, como sempre devolve — o melhor a 1,450, longe
 
 ## Corte de evidência
 
-A busca sempre retorna `k` resultados: para uma pergunta sobre algo ausente do corpus, ela devolve os menos ruins, não os bons. O que decide se existe resposta é o corte, em dois estágios:
+A busca sempre retorna `k` resultados: para uma pergunta sobre algo ausente do corpus, ela devolve os menos ruins, não os bons. O que decide se existe resposta é o corte, em três estágios:
 
 1. **o melhor resultado precisa estar abaixo de `best_max` (1,35)** — é ele que separa "o corpus trata desse assunto" de "não trata";
 2. **os demais entram se ficarem dentro de `relative_margin` (0,25) do melhor** — o que se adapta à escala de cada pergunta;
@@ -108,7 +118,7 @@ O corte decide se **há assunto**, não se há resposta. Perguntas com vocabulá
 python scripts/eval_retrieval.py
 ```
 
-Dezesseis perguntas com expectativa declarada: onze que o corpus responde — várias em linguagem coloquial, que é onde a recuperação falhava — e cinco que ele não responde. O script falha se a calibração regredir.
+Vinte e três perguntas com expectativa declarada: dezoito que o corpus responde — várias em linguagem coloquial, que é onde a recuperação falhava, e outras sobre a própria identidade e os próprios limites do agente — e cinco que ele não responde. O script falha se a calibração regredir.
 
 Isso não é teste unitário e não pode ser: nos dois modos de falha de um RAG (silêncio indevido e resposta indevida) o código está correto. O que está errado é a calibração, e ela só aparece executando perguntas contra o índice real.
 
@@ -163,6 +173,20 @@ A autenticação no GCP usa **Workload Identity Federation**: o GitHub emite um 
 
 A preparação da infraestrutura está em [`infrastructure/SETUP.md`](infrastructure/SETUP.md).
 
+## Evidência de execução em nuvem
+
+| | |
+|---|---|
+| **Aplicação** | <https://ragnaldo-gh5wfcwbpa-rj.a.run.app> |
+| **Repositório** | <https://github.com/FSzekut/ragnaldo> |
+| **Hospedagem** | Google Cloud Run, região `southamerica-east1` |
+| **Serviço OCI** | OCI Object Storage, bucket dos documentos-fonte |
+| **Capturas** | [`assets/landing.png`](assets/landing.png) · [`assets/agente-respondendo.png`](assets/agente-respondendo.png) |
+
+As duas imagens no topo deste documento foram capturadas da aplicação em execução no Cloud Run, não de ambiente local.
+
+Cada pergunta respondida em produção gera uma linha em `artifacts/logs/execution.jsonl` com timestamp, trechos recuperados, distâncias, latência e modelo.
+
 ## Segurança antes de commits
 
 Depois de revisar e adicionar os arquivos desejados ao staging:
@@ -177,5 +201,3 @@ git diff --cached
 ```
 
 O commit só deve ser criado depois que essas verificações passarem. O `security_check.py` também está instalado como hook de `pre-commit`, e o repositório tem push protection ativo no GitHub.
-
-A evidência do deploy será adicionada quando a aplicação estiver publicada.
