@@ -6,9 +6,9 @@
 
 O RAGnaldo é o projeto desenvolvido para o Challenge Alura Agente. Ele usa RAG para responder perguntas com base em documentos públicos e em documentação autoral do projeto, sempre apresentando as fontes recuperadas — e recusando quando elas não sustentam a resposta.
 
-![Página inicial do RAGnaldo](assets/landing.png)
+![Página inicial do RAGnaldo em execução no Cloud Run](assets/landing.png)
 
-A landing carrega sem importar torch, sentence-transformers, LangChain ou FAISS. Esses recursos só entram em memória quando o visitante inicializa o agente.
+A captura mantém a barra de endereços à mostra — `ragnaldo-gh5wfcwbpa-rj.a.run.app` — porque uma imagem de aplicação Streamlit sem a URL não distingue nuvem de `localhost`. A landing carrega sem importar torch, sentence-transformers, LangChain ou FAISS. Esses recursos só entram em memória quando o visitante inicializa o agente.
 
 ![RAGnaldo respondendo com fontes rastreáveis](assets/agente-respondendo.png)
 
@@ -126,6 +126,27 @@ Isso não é teste unitário e não pode ser: nos dois modos de falha de um RAG 
 
 Cada pergunta gera uma linha em `artifacts/logs/execution.jsonl` com timestamp, pergunta, resposta, trechos recuperados com suas distâncias, latência, modelo e eventual erro. O arquivo fica fora do Git porque contém as perguntas reais de quem usa o agente.
 
+Uma linha real, com a resposta abreviada e a lista de trechos reduzida a três:
+
+```json
+{
+  "timestamp": "2026-08-03T00:35:17.376605+00:00",
+  "question": "voce utiliza alguma tecnologia oracle?",
+  "answer": "Não encontrei no contexto nenhuma informação sobre as tecnologias usadas na minha…",
+  "refused": false,
+  "model": "claude-sonnet-5",
+  "latency_ms": 4176,
+  "retrieved": [
+    {"source": "oracle_ai_insights_america_latina_2025.pdf", "location": "página 29", "chunk_id": "d6ac22530f351ae7", "distance": 0.665},
+    {"source": "one_ai_for_tech_oracle_snapshot.html", "location": "documento", "chunk_id": "649e6935ef13451e", "distance": 0.7728},
+    {"source": "fontes_e_licencas.md", "location": "documento", "chunk_id": "bdcf6368cf54624d", "distance": 0.8159}
+  ],
+  "error": null
+}
+```
+
+Esse caso mostra a divisão de trabalho descrita acima. `refused` é `false` porque o corte de evidência deixou passar: o corpus fala bastante de Oracle, e a menor distância foi 0,665. Quem recusou foi o modelo, ao ver que os trechos tratavam da Oracle no mercado latino-americano, não das tecnologias com que este agente foi construído. O corte responde "há assunto?"; a pergunta "há resposta?" é do modelo.
+
 ## Fontes
 
 Baixe as fontes públicas registradas no manifesto:
@@ -183,9 +204,18 @@ A preparação da infraestrutura está em [`infrastructure/SETUP.md`](infrastruc
 | **Serviço OCI** | OCI Object Storage, bucket dos documentos-fonte |
 | **Capturas** | [`assets/landing.png`](assets/landing.png) · [`assets/agente-respondendo.png`](assets/agente-respondendo.png) |
 
-As duas imagens no topo deste documento foram capturadas da aplicação em execução no Cloud Run, não de ambiente local.
+As duas imagens no topo deste documento foram capturadas da aplicação em execução no Cloud Run, não de ambiente local. A primeira preserva a barra de endereços com o domínio `run.app`, que é o que torna a evidência verificável em vez de apenas afirmada.
 
-Cada pergunta respondida em produção gera uma linha em `artifacts/logs/execution.jsonl` com timestamp, trechos recuperados, distâncias, latência e modelo.
+Cada pergunta respondida em produção gera uma linha em `artifacts/logs/execution.jsonl` com timestamp, trechos recuperados, distâncias, latência e modelo — o formato está exemplificado em [Registro de execução](#registro-de-execução).
+
+### Onde cada requisito obrigatório foi cumprido
+
+| Requisito do enunciado | Onde |
+|---|---|
+| Repositório público no GitHub | <https://github.com/FSzekut/ragnaldo> |
+| Ao menos um serviço OCI no deploy | OCI Object Storage guarda os documentos-fonte; o pipeline os baixa antes de indexar, em `.github/workflows/deploy.yml` |
+| Imagem ou vídeo do agente executando em nuvem | As duas capturas acima, com a URL do Cloud Run visível |
+| Registro da execução (card 8) | `artifacts/logs/execution.jsonl`, com pergunta, contexto recuperado, resposta, timestamp e latência |
 
 ## Segurança antes de commits
 
