@@ -39,7 +39,7 @@ def render_brand(compact: bool = False) -> None:
             <span class="brand-core">R</span>
           </div>
           <div>
-            <p class="eyebrow">// guia não-oficial do Tech Builder</p>
+            <p class="eyebrow">// guia não-oficial do ONE AI for Tech</p>
             <h1>RAGNALDO</h1>
           </div>
         </section>

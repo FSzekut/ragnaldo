@@ -54,6 +54,15 @@ CASES: list[tuple[str, bool]] = [
     ("quem é você?", True),
     ("como você foi construído?", True),
     ("que tecnologias você usa?", True),
+    ("como posso ver o código?", True),
+    # Sobre os próprios limites. O agente descreve como decide o que sabe, o que
+    # é diferente de saber a resposta — e útil justamente quando ele não sabe.
+    ("qual sua maior dificuldade?", True),
+    ("por que às vezes você não responde?", True),
+    # Espera-se evidência, e a evidência é a lacuna declarada: o corpus contém um
+    # texto dizendo que nada descreve o Tech Builder. O agente responde "não sei"
+    # com fundamento, em vez de deduzir isso da ausência de resultados.
+    ("o que é o tech builder?", True),
     # Fora do corpus: aqui a resposta correta é o silêncio.
     ("Qual foi o placar da final da Copa do Mundo de 1970?", False),
     ("Qual a receita de bolo de cenoura?", False),
