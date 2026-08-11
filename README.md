@@ -96,7 +96,13 @@ A resposta citou duas fontes. Outros trechos entraram no contexto mas não suste
 >
 > Não encontrei isso nas fontes que eu tenho. Poderia inventar, mas o jurídico vetorial não deixou.
 
-A busca devolveu dez resultados, como sempre devolve — o melhor a 1,450, longe demais para sustentar qualquer coisa. Nenhum virou contexto, e a recusa saiu em **19 ms sem chamar a API**.
+A busca devolveu dez resultados, como sempre devolve — o melhor a 1,450, longe demais para sustentar qualquer coisa. Nenhum virou contexto.
+
+Aí o agente não recusa de imediato: ele **reescreve a pergunta e tenta de novo**. Se a reescrita voltar igual à original, a segunda busca daria o mesmo resultado, e é isso que autoriza a recusa. Medido em 11/08, sobre cinco perguntas fora do corpus: **recusa em 933 ms na média** (624 ms a 1.241 ms), com **uma chamada de modelo**, a da reescrita. Para efeito de comparação, uma resposta fundamentada leva cerca de 9 segundos.
+
+O sinal de "fora de escopo" é o texto voltar idêntico, e isso é pedido explicitamente ao modelo — a regra 4 do prompt de reescrita manda devolver a pergunta palavra por palavra quando ela não é sobre o acervo. Sem essa regra o prompt puxaria a pergunta de fora para o vocabulário de dentro, a segunda busca traria um documento marginal, e o agente responderia onde deveria recusar. Medição da regra: **5 de 5** perguntas fora do corpus voltaram idênticas, e **3 de 3** perguntas legítimas continuaram sendo reescritas ("vale a pena fazer o ONE?" vira "Quais são os benefícios do ONE AI for Tech?").
+
+> ⚠️ **Corrigido em 11/08.** Este trecho afirmava que a recusa saía em "19 ms sem chamar a API". Era verdade na chain linear e deixou de ser quando o ciclo de reescrita entrou. O número antigo sobreviveu porque ninguém remede o que já está escrito.
 
 ## Corte de evidência
 

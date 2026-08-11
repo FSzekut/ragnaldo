@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import json
 import time
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -18,7 +18,7 @@ from langchain_core.documents import Document
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 
-from ragnaldo.config import EXECUTION_LOG_PATH, GENERATION, SETTINGS, GenerationSettings
+from ragnaldo.config import EXECUTION_LOG_PATH, GENERATION, GenerationSettings
 
 REFUSAL = (
     "Não encontrei isso nas fontes que eu tenho. Poderia inventar, "
@@ -161,6 +161,44 @@ def build_model(settings: GenerationSettings = GENERATION):
     )
 
 
+REWRITE_SYSTEM = """Você reformula perguntas para melhorar a busca semântica \
+num acervo sobre o ONE AI for Tech (programa de formação da Oracle com a Alura), \
+a jornada Tech Builder e a engenharia do agente RAGnaldo.
+
+Reescreva a pergunta preservando exatamente a intenção original.
+
+Regras:
+1. Se a pergunta for sobre esses assuntos, prefira os termos que a documentação
+   oficial usaria: "gratuito" no lugar de "pagar", "benefícios" no lugar de
+   "vale a pena", "requisitos" no lugar de "o que preciso".
+2. Se a pergunta for sobre o agente RAGnaldo, prefira os termos que a documentação
+   oficial usaria: "RAGnaldo" no lugar de "agent", "engenharia" no lugar de
+   "desenvolvimento", "ONE AI for Tech" no lugar de "programa de formação",
+   "Jornada Tech Builder" no lugar de "jornada de formação".
+3. Se a pergunta for sobre a jornada Tech Builder, prefira os termos que a documentação
+   oficial usaria: "Jornada Tech Builder" no lugar de "jornada de formação",
+   "ONE AI for Tech" no lugar de "programa de formação", "engenharia" no lugar de
+   "desenvolvimento", "RAGnaldo" no lugar de "agent".
+4. Se a pergunta NÃO for sobre esses assuntos, devolva-a exatamente como veio, palavra
+   por palavra, sem trocar nenhum termo. Nunca aproxime do vocabulário do acervo uma
+   pergunta que não é sobre ele: fazer isso força uma pergunta de fora a parecer de
+   dentro, a busca passa a devolver documento marginal, e o agente responde onde deveria
+   recusar. Devolver o texto idêntico é o sinal de que a pergunta está fora de escopo.
+5. Não invente detalhes que o usuário não mencionou.
+6. Devolva apenas a pergunta reescrita, sem aspas e sem explicação."""
+
+REWRITE_PROMPT = ChatPromptTemplate.from_messages(
+    [("system", REWRITE_SYSTEM), ("human", "{question}")]
+)
+
+
+def rewrite_question(question: str, settings: GenerationSettings = GENERATION) -> str:
+    """Reescreve a pergunta para melhorar a busca semântica."""
+    model = build_model(replace(settings, model=settings.rewrite_model))
+    chain = REWRITE_PROMPT | model | StrOutputParser()
+    return chain.invoke({"question": question}).strip()
+
+
 def append_record(record: ExecutionRecord, log_path: Path = EXECUTION_LOG_PATH) -> None:
     log_path.parent.mkdir(parents=True, exist_ok=True)
     with log_path.open("a", encoding="utf-8") as handle:
@@ -178,11 +216,16 @@ def answer_question(
     A latência medida cobre recuperação e geração juntas, que é o que o usuário
     espera de fato.
     """
+    # Import tardio: graph.py importa este módulo, então o import no topo
+    # fecharia um ciclo. Mesmo padrão que build_model já usa com ChatAnthropic.
+    from ragnaldo.graph import build_graph
+
     started = time.perf_counter()
     timestamp = datetime.now(timezone.utc).isoformat()
 
-    results = vector_store.similarity_search_with_score(question, k=SETTINGS.retrieval_k)
-    evidence = select_evidence(results, settings)
+    final = build_graph(vector_store, settings).invoke({"question": question})
+
+    evidence = final.get("evidence", [])
     documents = [document for document, _ in evidence]
     retrieved = [
         RetrievedChunk(
@@ -193,29 +236,14 @@ def answer_question(
         )
         for document, score in evidence
     ]
-
-    error: str | None = None
-    if not documents:
-        # Recusa antes da chamada: sem evidência, a API só produziria uma
-        # alucinação educada, e ainda cobraria por ela.
-        answer, refused = REFUSAL, True
-    else:
-        chain = PROMPT | build_model(settings) | StrOutputParser()
-        try:
-            answer = chain.invoke(
-                {"context": format_context(documents), "question": question}
-            )
-            refused = False
-        except Exception as exception:  # noqa: BLE001
-            # A falha também é execução, e é a que mais interessa depois.
-            error = f"{type(exception).__name__}: {exception}"
-            answer, refused = "", False
+    answer = final.get("answer", "")
+    error = final.get("error")
 
     record = ExecutionRecord(
         timestamp=timestamp,
         question=question,
         answer=answer,
-        refused=refused,
+        refused=not documents,
         model=settings.model,
         latency_ms=int((time.perf_counter() - started) * 1000),
         retrieved=retrieved,
