@@ -15,10 +15,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from langchain_core.documents import Document
-from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 
-from ragnaldo.config import EXECUTION_LOG_PATH, GENERATION, SETTINGS, GenerationSettings
+from ragnaldo.config import EXECUTION_LOG_PATH, GENERATION, GenerationSettings
 
 REFUSAL = (
     "Não encontrei isso nas fontes que eu tenho. Poderia inventar, "
@@ -178,11 +177,16 @@ def answer_question(
     A latência medida cobre recuperação e geração juntas, que é o que o usuário
     espera de fato.
     """
+    # Import tardio: graph.py importa este módulo, então o import no topo
+    # fecharia um ciclo. Mesmo padrão que build_model já usa com ChatAnthropic.
+    from ragnaldo.graph import build_graph
+
     started = time.perf_counter()
     timestamp = datetime.now(timezone.utc).isoformat()
 
-    results = vector_store.similarity_search_with_score(question, k=SETTINGS.retrieval_k)
-    evidence = select_evidence(results, settings)
+    final = build_graph(vector_store, settings).invoke({"question": question})
+
+    evidence = final.get("evidence", [])
     documents = [document for document, _ in evidence]
     retrieved = [
         RetrievedChunk(
@@ -193,29 +197,14 @@ def answer_question(
         )
         for document, score in evidence
     ]
-
-    error: str | None = None
-    if not documents:
-        # Recusa antes da chamada: sem evidência, a API só produziria uma
-        # alucinação educada, e ainda cobraria por ela.
-        answer, refused = REFUSAL, True
-    else:
-        chain = PROMPT | build_model(settings) | StrOutputParser()
-        try:
-            answer = chain.invoke(
-                {"context": format_context(documents), "question": question}
-            )
-            refused = False
-        except Exception as exception:  # noqa: BLE001
-            # A falha também é execução, e é a que mais interessa depois.
-            error = f"{type(exception).__name__}: {exception}"
-            answer, refused = "", False
+    answer = final.get("answer", "")
+    error = final.get("error")
 
     record = ExecutionRecord(
         timestamp=timestamp,
         question=question,
         answer=answer,
-        refused=refused,
+        refused=not documents,
         model=settings.model,
         latency_ms=int((time.perf_counter() - started) * 1000),
         retrieved=retrieved,
