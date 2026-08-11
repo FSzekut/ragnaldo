@@ -179,8 +179,13 @@ Regras:
    oficial usaria: "Jornada Tech Builder" no lugar de "jornada de formação",
    "ONE AI for Tech" no lugar de "programa de formação", "engenharia" no lugar de
    "desenvolvimento", "RAGnaldo" no lugar de "agent".
-4. Não invente detalhes que o usuário não mencionou.
-5. Devolva apenas a pergunta reescrita, sem aspas e sem explicação."""
+4. Se a pergunta NÃO for sobre esses assuntos, devolva-a exatamente como veio, palavra
+   por palavra, sem trocar nenhum termo. Nunca aproxime do vocabulário do acervo uma
+   pergunta que não é sobre ele: fazer isso força uma pergunta de fora a parecer de
+   dentro, a busca passa a devolver documento marginal, e o agente responde onde deveria
+   recusar. Devolver o texto idêntico é o sinal de que a pergunta está fora de escopo.
+5. Não invente detalhes que o usuário não mencionou.
+6. Devolva apenas a pergunta reescrita, sem aspas e sem explicação."""
 
 REWRITE_PROMPT = ChatPromptTemplate.from_messages(
     [("system", REWRITE_SYSTEM), ("human", "{question}")]

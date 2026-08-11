@@ -79,8 +79,13 @@ def build_graph(vector_store, settings: GenerationSettings = GENERATION):
         return {"reescrita": generation.rewrite_question(state["question"], settings)}
 
     def houve_mudanca(state: RagState) -> str:
-        # Medido em 10/08: para pergunta fora de escopo o modelo devolve o
-        # texto idêntico. Repetir a busca daria exatamente o mesmo resultado.
+        # Texto idêntico é o sinal combinado de "fora de escopo": a regra 4 do
+        # REWRITE_SYSTEM manda devolver a pergunta palavra por palavra quando ela
+        # não é sobre o acervo. Repetir a busca daria o mesmo resultado.
+        #
+        # Até 11/08 isso era só comportamento observado em 10/08, e o prompt não
+        # pedia nada — as regras 1 a 3 mandavam aproximar do vocabulário oficial e
+        # nenhuma dizia o que fazer fora do escopo. A recusa dependia de sorte.
         if state["reescrita"] == state["question"]:
           return "recusar"
         return "recuperar_evidencia"

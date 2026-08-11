@@ -96,7 +96,9 @@ A resposta citou duas fontes. Outros trechos entraram no contexto mas não suste
 >
 > Não encontrei isso nas fontes que eu tenho. Poderia inventar, mas o jurídico vetorial não deixou.
 
-A busca devolveu dez resultados, como sempre devolve — o melhor a 1,450, longe demais para sustentar qualquer coisa. Nenhum virou contexto, e a recusa saiu em **19 ms sem chamar a API**.
+A busca devolveu dez resultados, como sempre devolve — o melhor a 1,450, longe demais para sustentar qualquer coisa. Nenhum virou contexto, e o agente recusou.
+
+> ⚠️ **Corrigido em 11/08.** Este parágrafo dizia que a recusa saía em "19 ms sem chamar a API". Era verdade quando o fluxo era uma chain linear, e deixou de ser quando o ciclo de reescrita entrou: hoje a primeira busca sem evidência não recusa direto, ela **reescreve a pergunta — e isso é uma chamada de modelo**. Só depois, se a reescrita voltar idêntica, vem a recusa. O número antigo continuava no texto porque ninguém remede o que já está escrito.
 
 ## Corte de evidência
 
