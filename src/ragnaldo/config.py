@@ -73,6 +73,17 @@ class GenerationSettings:
     # estava no chunk seguinte, descartada por ser um pouco mais distante.
     min_evidence: int = int(os.getenv("RETRIEVAL_MIN_EVIDENCE", "4"))
 
+    # Segunda tentativa, depois da reescrita: limiar mais exigente que o da
+    # primeira. Medido em 10/08: reformular aproxima QUALQUER pergunta do
+    # corpus, inclusive as que devem ser recusadas — "como declarar imposto
+    # de renda" saiu de 1.547 para 1.360, a dez milésimos de ser aceita sob
+    # o corte normal. A reescrita já teve a chance de otimizar a formulação;
+    # se ainda assim ficou perto do limite, o corpus não tem a resposta.
+    rewrite_best_max: float = float(os.getenv("RETRIEVAL_REWRITE_BEST_MAX", "1.25"))
+
+    # Reescrever é tarefa curta e mecânica: não paga o modelo da resposta.
+    rewrite_model: str = os.getenv("LLM_REWRITE_MODEL", "claude-haiku-4-5-20251001")
+
     # repr=False não é preciosismo: RagSettings é impresso no notebook 01, cujos
     # outputs são versionados. Uma chave dentro do repr acabaria num repositório
     # público sem que ninguém tivesse escrito a chave em lugar nenhum.

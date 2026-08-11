@@ -10,11 +10,12 @@ from __future__ import annotations
 
 import json
 import time
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from datetime import datetime, timezone
 from pathlib import Path
 
 from langchain_core.documents import Document
+from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 
 from ragnaldo.config import EXECUTION_LOG_PATH, GENERATION, GenerationSettings
@@ -158,6 +159,39 @@ def build_model(settings: GenerationSettings = GENERATION):
         stop=None,
         **optional,
     )
+
+
+REWRITE_SYSTEM = """Você reformula perguntas para melhorar a busca semântica \
+num acervo sobre o ONE AI for Tech (programa de formação da Oracle com a Alura), \
+a jornada Tech Builder e a engenharia do agente RAGnaldo.
+
+Reescreva a pergunta preservando exatamente a intenção original.
+
+Regras:
+1. Se a pergunta for sobre esses assuntos, prefira os termos que a documentação
+   oficial usaria: "gratuito" no lugar de "pagar", "benefícios" no lugar de
+   "vale a pena", "requisitos" no lugar de "o que preciso".
+2. Se a pergunta for sobre o agente RAGnaldo, prefira os termos que a documentação
+   oficial usaria: "RAGnaldo" no lugar de "agent", "engenharia" no lugar de
+   "desenvolvimento", "ONE AI for Tech" no lugar de "programa de formação",
+   "Jornada Tech Builder" no lugar de "jornada de formação".
+3. Se a pergunta for sobre a jornada Tech Builder, prefira os termos que a documentação
+   oficial usaria: "Jornada Tech Builder" no lugar de "jornada de formação",
+   "ONE AI for Tech" no lugar de "programa de formação", "engenharia" no lugar de
+   "desenvolvimento", "RAGnaldo" no lugar de "agent".
+4. Não invente detalhes que o usuário não mencionou.
+5. Devolva apenas a pergunta reescrita, sem aspas e sem explicação."""
+
+REWRITE_PROMPT = ChatPromptTemplate.from_messages(
+    [("system", REWRITE_SYSTEM), ("human", "{question}")]
+)
+
+
+def rewrite_question(question: str, settings: GenerationSettings = GENERATION) -> str:
+    """Reescreve a pergunta para melhorar a busca semântica."""
+    model = build_model(replace(settings, model=settings.rewrite_model))
+    chain = REWRITE_PROMPT | model | StrOutputParser()
+    return chain.invoke({"question": question}).strip()
 
 
 def append_record(record: ExecutionRecord, log_path: Path = EXECUTION_LOG_PATH) -> None:
