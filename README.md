@@ -4,15 +4,15 @@
 
 ### ▶ [Acesse a aplicação](https://ragnaldo-gh5wfcwbpa-rj.a.run.app)
 
-O RAGnaldo é o projeto desenvolvido para o Challenge Alura Agente. Ele usa RAG para responder perguntas com base em documentos públicos e em documentação autoral do projeto, sempre apresentando as fontes recuperadas — e recusando quando elas não sustentam a resposta.
+O RAGnaldo é o projeto desenvolvido para o Challenge Alura Agente. Ele usa RAG para responder perguntas com base em documentos públicos e em documentação autoral do projeto, sempre apresentando as fontes recuperadas, e recusando quando elas não sustentam a resposta.
 
 ![Página inicial do RAGnaldo em execução no Cloud Run](assets/landing.png)
 
-A captura mantém a barra de endereços à mostra — `ragnaldo-gh5wfcwbpa-rj.a.run.app` — porque uma imagem de aplicação Streamlit sem a URL não distingue nuvem de `localhost`. A landing carrega sem importar torch, sentence-transformers, LangChain ou FAISS. Esses recursos só entram em memória quando o visitante inicializa o agente.
+A captura mantém a barra de endereços à mostra (`ragnaldo-gh5wfcwbpa-rj.a.run.app`) porque uma imagem de aplicação Streamlit sem a URL não distingue nuvem de `localhost`. A landing carrega sem importar torch, sentence-transformers, LangChain ou FAISS. Esses recursos só entram em memória quando o visitante inicializa o agente.
 
 ![RAGnaldo respondendo com fontes rastreáveis](assets/agente-respondendo.png)
 
-Uma resposta em produção: o agente se apresenta, cita a fonte que sustenta cada afirmação, declara explicitamente o que o contexto não cobre — "sobre detalhes mais técnicos de arquitetura interna, o contexto que tenho não traz mais especificações, então paro por aqui" — e lista abaixo os trechos consultados que não sustentaram nada.
+Uma resposta em produção: o agente se apresenta, cita a fonte que sustenta cada afirmação e declara explicitamente o que o contexto não cobre, dizendo "sobre detalhes mais técnicos de arquitetura interna, o contexto que tenho não traz mais especificações, então paro por aqui". Abaixo da resposta ficam os trechos consultados que não sustentaram nada.
 
 ## Status
 
@@ -105,7 +105,7 @@ LLM_MODEL=claude-sonnet-5
 LLM_API_KEY=sk-ant-...
 ```
 
-Opcionais, todos com padrão razoável: `LLM_MAX_TOKENS` (1024), `RETRIEVAL_K` (10), `RETRIEVAL_BEST_MAX` (1.35), `RETRIEVAL_RELATIVE_MARGIN` (0.25) e `RETRIEVAL_MIN_EVIDENCE` (4). O `LLM_TEMPERATURE` só deve ser definido se o modelo escolhido aceitar o parâmetro — os mais recentes o rejeitam com HTTP 400.
+Opcionais, todos com padrão razoável: `LLM_MAX_TOKENS` (1024), `RETRIEVAL_K` (10), `RETRIEVAL_BEST_MAX` (1.35), `RETRIEVAL_RELATIVE_MARGIN` (0.25) e `RETRIEVAL_MIN_EVIDENCE` (4). O `LLM_TEMPERATURE` só deve ser definido se o modelo escolhido aceitar o parâmetro: os mais recentes o rejeitam com HTTP 400.
 
 ## Exemplos
 
@@ -125,11 +125,11 @@ A resposta citou duas fontes. Outros trechos entraram no contexto mas não suste
 >
 > Não encontrei isso nas fontes que eu tenho. Poderia inventar, mas o jurídico vetorial não deixou.
 
-A busca devolveu dez resultados, como sempre devolve — o melhor a 1,450, longe demais para sustentar qualquer coisa. Nenhum virou contexto.
+A busca devolveu dez resultados, como sempre devolve. O melhor ficou a 1,450, longe demais para sustentar qualquer coisa, e nenhum virou contexto.
 
 Aí o agente não recusa de imediato: ele **reescreve a pergunta e tenta de novo**. Se a reescrita voltar igual à original, a segunda busca daria o mesmo resultado, e é isso que autoriza a recusa. Medido em 11/08, sobre cinco perguntas fora do corpus: **recusa em 933 ms na média** (624 ms a 1.241 ms), com **uma chamada de modelo**, a da reescrita. Para efeito de comparação, uma resposta fundamentada leva cerca de 9 segundos.
 
-O sinal de "fora de escopo" é o texto voltar idêntico, e isso é pedido explicitamente ao modelo — a regra 4 do prompt de reescrita manda devolver a pergunta palavra por palavra quando ela não é sobre o acervo. Sem essa regra o prompt puxaria a pergunta de fora para o vocabulário de dentro, a segunda busca traria um documento marginal, e o agente responderia onde deveria recusar. Medição da regra: **5 de 5** perguntas fora do corpus voltaram idênticas, e **3 de 3** perguntas legítimas continuaram sendo reescritas ("vale a pena fazer o ONE?" vira "Quais são os benefícios do ONE AI for Tech?").
+O sinal de "fora de escopo" é o texto voltar idêntico, e isso é pedido explicitamente ao modelo: a regra 4 do prompt de reescrita manda devolver a pergunta palavra por palavra quando ela não é sobre o acervo. Sem essa regra o prompt puxaria a pergunta de fora para o vocabulário de dentro, a segunda busca traria um documento marginal, e o agente responderia onde deveria recusar. Medição da regra: **5 de 5** perguntas fora do corpus voltaram idênticas, e **3 de 3** perguntas legítimas continuaram sendo reescritas ("vale a pena fazer o ONE?" vira "Quais são os benefícios do ONE AI for Tech?").
 
 > ⚠️ **Corrigido em 11/08.** Este trecho afirmava que a recusa saía em "19 ms sem chamar a API". Era verdade na chain linear e deixou de ser quando o ciclo de reescrita entrou. O número antigo sobreviveu porque ninguém remede o que já está escrito.
 
@@ -137,13 +137,13 @@ O sinal de "fora de escopo" é o texto voltar idêntico, e isso é pedido explic
 
 A busca sempre retorna `k` resultados: para uma pergunta sobre algo ausente do corpus, ela devolve os menos ruins, não os bons. O que decide se existe resposta é o corte, em três estágios:
 
-1. **o melhor resultado precisa estar abaixo de `best_max` (1,35)** — é ele que separa "o corpus trata desse assunto" de "não trata";
-2. **os demais entram se ficarem dentro de `relative_margin` (0,25) do melhor** — o que se adapta à escala de cada pergunta;
+1. **o melhor resultado precisa estar abaixo de `best_max` (1,35)**, que é o que separa "o corpus trata desse assunto" de "não trata";
+2. **os demais entram se ficarem dentro de `relative_margin` (0,25) do melhor**, o que se adapta à escala de cada pergunta;
 3. **pelo menos `min_evidence` (4) trechos são enviados** quando os dois primeiros estágios deixam menos.
 
-O terceiro estágio corrige um efeito colateral do segundo: quando um trecho é muito melhor que os demais, a margem descarta todo o resto e sobra ele sozinho — e como o texto é dividido a cada mil caracteres, esse trecho isolado costuma ser metade de uma seção. O modelo então responde, com razão, que a informação "foi cortada antes de detalhar", enquanto a continuação estava no chunk seguinte.
+O terceiro estágio corrige um efeito colateral do segundo: quando um trecho é muito melhor que os demais, a margem descarta todo o resto e sobra ele sozinho. Como o texto é dividido a cada mil caracteres, esse trecho isolado costuma ser metade de uma seção. O modelo então responde, com razão, que a informação "foi cortada antes de detalhar", enquanto a continuação estava no chunk seguinte.
 
-O segundo estágio existe porque a distância não é comparável entre perguntas. "O que o ONE ensina sobre RAG e LangChain?" produz 0,71; "para quem é o programa ONE?", sobre o mesmo corpus, produz 1,16. Um limiar absoluto único rejeitaria a segunda ou aceitaria qualquer coisa na primeira — foi exatamente o que aconteceu na primeira calibração deste projeto, feita com uma única pergunta de exemplo.
+O segundo estágio existe porque a distância não é comparável entre perguntas. "O que o ONE ensina sobre RAG e LangChain?" produz 0,71; "para quem é o programa ONE?", sobre o mesmo corpus, produz 1,16. Um limiar absoluto único rejeitaria a segunda ou aceitaria qualquer coisa na primeira. Foi exatamente o que aconteceu na primeira calibração deste projeto, feita com uma única pergunta de exemplo.
 
 O corte decide se **há assunto**, não se há resposta. Perguntas com vocabulário sobreposto ao corpus passam de propósito, e quem recusa ali é o modelo, que recebe o contexto e vê que ele trata de outra coisa.
 
@@ -153,7 +153,7 @@ O corte decide se **há assunto**, não se há resposta. Perguntas com vocabulá
 python scripts/eval_retrieval.py
 ```
 
-Vinte e três perguntas com expectativa declarada: dezoito que o corpus responde — várias em linguagem coloquial, que é onde a recuperação falhava, e outras sobre a própria identidade e os próprios limites do agente — e cinco que ele não responde. O script falha se a calibração regredir.
+Vinte e três perguntas com expectativa declarada: dezoito que o corpus responde (várias em linguagem coloquial, que é onde a recuperação falhava, e outras sobre a própria identidade e os próprios limites do agente) e cinco que ele não responde. O script falha se a calibração regredir.
 
 Isso não é teste unitário e não pode ser: nos dois modos de falha de um RAG (silêncio indevido e resposta indevida) o código está correto. O que está errado é a calibração, e ela só aparece executando perguntas contra o índice real.
 
@@ -198,7 +198,7 @@ Arquivos de terceiros permanecem fora do Git. URLs, hashes e status temporal est
 jupyter lab
 ```
 
-Execute primeiro `01_ingestao_e_embeddings.ipynb` para gerar o índice. Depois `02_retrieval_e_rag.ipynb`, que percorre a recuperação, o corte de evidência, o prompt e a cadeia completa — terminando no teste que mais importa: uma pergunta que o corpus não responde.
+Execute primeiro `01_ingestao_e_embeddings.ipynb` para gerar o índice. Depois `02_retrieval_e_rag.ipynb`, que percorre a recuperação, o corte de evidência, o prompt e a cadeia completa. Termina no teste que mais importa: uma pergunta que o corpus não responde.
 
 ## Interface
 
@@ -223,7 +223,7 @@ testes e lint
     -> publica no Cloud Run
 ```
 
-O índice é construído no pipeline, não empacotado no repositório: os documentos-fonte são de terceiros e ficam fora do Git, e quem os guarda é o **OCI Object Storage**. É esse passo que atende ao requisito de usar ao menos um serviço OCI — e ele não é decorativo, porque sem o bucket o pipeline não teria as fontes para indexar.
+O índice é construído no pipeline, não empacotado no repositório: os documentos-fonte são de terceiros e ficam fora do Git, e quem os guarda é o **OCI Object Storage**. É esse passo que atende ao requisito de usar ao menos um serviço OCI. Ele não é decorativo, porque sem o bucket o pipeline não teria as fontes para indexar.
 
 A autenticação no GCP usa **Workload Identity Federation**: o GitHub emite um token de curta duração a cada execução e o Google o troca por credenciais temporárias. Nenhuma chave de conta de serviço existe como segredo. A chave da API do modelo fica no Secret Manager e é lida pelo Cloud Run em tempo de execução, nunca entrando na imagem.
 
@@ -241,7 +241,7 @@ A preparação da infraestrutura está em [`infrastructure/SETUP.md`](infrastruc
 
 As duas imagens no topo deste documento foram capturadas da aplicação em execução no Cloud Run, não de ambiente local. A primeira preserva a barra de endereços com o domínio `run.app`, que é o que torna a evidência verificável em vez de apenas afirmada.
 
-Cada pergunta respondida em produção gera uma linha em `artifacts/logs/execution.jsonl` com timestamp, trechos recuperados, distâncias, latência e modelo — o formato está exemplificado em [Registro de execução](#registro-de-execução).
+Cada pergunta respondida em produção gera uma linha em `artifacts/logs/execution.jsonl` com timestamp, trechos recuperados, distâncias, latência e modelo. O formato está exemplificado em [Registro de execução](#registro-de-execução).
 
 ### Onde cada requisito obrigatório foi cumprido
 
