@@ -16,7 +16,7 @@ Uma resposta em produção: o agente se apresenta, cita a fonte que sustenta cad
 
 ## Status
 
-✅ **Em produção.** Ingestão multiformato, índice vetorial verificado, recuperação com corte de evidência, geração fundamentada e deploy automático no Cloud Run funcionando de ponta a ponta. As decisões estão registradas em [`diretrizes.md`](diretrizes.md).
+✅ **Em produção.** Ingestão multiformato, índice vetorial verificado, recuperação com corte de evidência, geração fundamentada e deploy automático no Cloud Run funcionando de ponta a ponta. Desde 11/08 o fluxo de decisão é um grafo de estados em **LangGraph**, com ciclo de reescrita da pergunta antes de recusar. As decisões estão registradas em [`diretrizes.md`](diretrizes.md).
 
 ## Arquitetura
 
@@ -25,16 +25,45 @@ Ingestão (offline, sem custo de API)
 PDF DOCX XLSX PPTX MD TXT CSV JSON HTML
     -> tabela LOADERS -> chunks -> embeddings locais -> FAISS + manifesto de hashes
 
-Serving
-pergunta -> embedding local -> busca vetorial -> corte de evidência
-                                                      |
-                                       nada sobrou? -> recusa (sem chamar a API)
-                                       sobrou?      -> contexto com procedência
-                                                      -> Claude -> resposta + fontes
-                                                      -> registro de execução
+Serving (grafo de estados, LangGraph)
+
+  START
+    |
+    v
+  recuperar_evidencia <-----------------------------+
+    |                                               |
+    |  rotear()                                     |
+    +-- há evidência ...> gerar ...> resposta + fontes -> END
+    |                                               |
+    +-- 1a falha .......> reescrever                |
+    |                       |                       |
+    |                       |  houve_mudanca()      |
+    |                       +-- texto mudou ........+  2a passada, corte 1,25
+    |                       +-- texto idêntico ...> recusar -> END
+    |
+    +-- 2a falha .....................................> recusar -> END
 ```
 
-Os embeddings são locais em todas as etapas, inclusive para a pergunta. A API do modelo gerador é chamada **uma vez por pergunta**, e apenas quando existe evidência que sustente uma resposta.
+Os embeddings são locais em todas as etapas, inclusive para a pergunta. A API do modelo gerador é chamada **uma vez** quando existe evidência, e **uma vez** quando a pergunta precisa ser reescrita.
+
+### Por que grafo no lugar da chain
+
+Até 10/08 o serving era uma chain LCEL linear. Ela expressava bem o caminho feliz e escondia a decisão que mais importa neste projeto: recusar antes de gastar uma chamada cara. Pior, ela não tinha como expressar a aresta de volta.
+
+O ciclo de reescrita precisa que `reescrever` retorne para `recuperar_evidencia`, e chain linear não faz volta. Foi isso que motivou a migração, não a vontade de usar a biblioteca. O commit que abriu a branch registra a frase: *"o fluxo de decisão vira grafo, e langgraph deixa de ser fantasma"*.
+
+O que o grafo tem, em [`src/ragnaldo/graph.py`](src/ragnaldo/graph.py):
+
+| | |
+|---|---|
+| **Estado** | `RagState`, um `TypedDict` com `question`, `evidence`, `descartados`, `answer`, `error` e `reescrita` |
+| **Nós** | `recuperar_evidencia`, `reescrever`, `recusar`, `gerar` |
+| **Arestas condicionais** | `rotear()` depois da recuperação, `houve_mudanca()` depois da reescrita |
+| **Ciclo** | `reescrever` volta para `recuperar_evidencia` quando o texto mudou |
+
+Duas consequências que valem mais que o desenho. A recusa por falta de lastro passou a ser uma aresta do grafo, visível para quem lê o código, em vez de um tratamento colado depois da resposta. E a segunda passada usa um corte mais exigente, `rewrite_best_max` em **1,25** contra os **1,35** da primeira: a reescrita já teve a chance de otimizar a formulação, então exigir o mesmo limiar deixaria uma pergunta ruim entrar por insistência.
+
+Cronômetro e registro de execução ficam fora do grafo, em `answer_question`, porque instrumentam a execução sem fazer parte do domínio.
 
 ## Estrutura
 
